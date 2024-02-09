@@ -72,9 +72,21 @@ export type ModelRequestOptions = {
 
 export type ChatRequestRole = 'system' | 'user' | 'assistant' | 'tool';
 
+export type ChatContentText = {
+  type: 'text';
+  text: string;
+};
+
+export type ChatContentImageURL = {
+  type: 'image_url';
+  image_url: string;
+};
+
+export type ChatContentType = ChatContentText | ChatContentImageURL;
+
 export interface ChatRequestMessage {
   role: ChatRequestRole;
-  content?: string;
+  content?: string | ChatContentType[];
   toolCall?: ChatRequestToolCall; // used to respond to `assistant` type messages
   toolCallId?: string; // used to respond to `tool` type messages
 }
