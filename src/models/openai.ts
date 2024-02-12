@@ -1,5 +1,5 @@
 import 'openai/shims/web';
-import { defaults } from 'lodash';
+import { defaults, get } from 'lodash';
 import { OpenAI } from 'openai';
 import type { CompletionUsage } from 'openai/resources';
 import type { ChatCompletionCreateParamsBase } from 'openai/resources/chat/completions';
@@ -11,13 +11,14 @@ import {
   DefaultOpenAIModel,
   MinimumResponseTokens,
 } from '../config';
-import type {
-  ModelRequestOptions,
-  ModelConfig,
-  OpenAIConfig,
-  ChatRequestMessage,
-  ChatResponse,
-  ChatRequestToolCall,
+import {
+  type ModelRequestOptions,
+  type ModelConfig,
+  type OpenAIConfig,
+  type ChatRequestMessage,
+  type ChatResponse,
+  type ChatRequestToolCall,
+  getTextContent,
 } from '../types';
 import { debug, parseUnsafeJson } from '../utils';
 
@@ -114,7 +115,7 @@ export class OpenAIChatApi implements CompletionApi {
       : 100_000;
 
     const messageTokens = this.getTokensFromPrompt(
-      messages.map((m) => m.content ?? ''),
+      messages.map((m) => getTextContent(m)),
       finalRequestOptions.functions,
     );
     if (messageTokens > maxPromptTokens) {

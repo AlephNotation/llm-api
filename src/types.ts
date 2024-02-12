@@ -91,6 +91,20 @@ export interface ChatRequestMessage {
   toolCallId?: string; // used to respond to `tool` type messages
 }
 
+export function getTextContent(message: ChatRequestMessage): string {
+  const { content } = message;
+  if (typeof content === 'string') {
+    return content;
+  } else if (Array.isArray(content)) {
+    return content
+      .filter((item): item is ChatContentText => item.type === 'text')
+      .map((textContent) => textContent.text)
+      .join(' ');
+  } else {
+    return ''; // Return an empty string or any other appropriate value for when content is undefined
+  }
+}
+
 export interface ChatRequestToolCall {
   id: string;
   type: 'function';
