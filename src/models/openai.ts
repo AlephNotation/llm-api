@@ -1,5 +1,5 @@
 import 'openai/shims/web';
-import { defaults, get } from 'lodash';
+import { defaults } from 'lodash';
 import { OpenAI } from 'openai';
 import type { CompletionUsage } from 'openai/resources';
 import type { ChatCompletionCreateParamsBase } from 'openai/resources/chat/completions';
