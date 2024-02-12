@@ -12,12 +12,13 @@ import {
   DefaultOpenAIModel,
   MinimumResponseTokens,
 } from '../config';
-import type {
-  ModelRequestOptions,
-  ModelConfig,
-  OpenAIConfig,
-  ChatRequestMessage,
-  ChatResponse,
+import {
+  type ModelRequestOptions,
+  type ModelConfig,
+  type OpenAIConfig,
+  type ChatRequestMessage,
+  type ChatResponse,
+  getTextContent,
 } from '../types';
 import { debug, parseUnsafeJson } from '../utils';
 
@@ -114,7 +115,7 @@ export class OpenAILegacyChatApi implements CompletionApi {
       : 100_000;
 
     const messageTokens = this.getTokensFromPrompt(
-      messages.map((m) => m.content ?? ''),
+      messages.map((m) => getTextContent(m)),
       finalRequestOptions.functions,
     );
     if (messageTokens > maxPromptTokens) {

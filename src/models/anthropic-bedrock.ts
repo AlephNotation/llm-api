@@ -210,11 +210,12 @@ function buildMessages(
         ...message,
         // automatically remove forbidden tokens in the input message to thwart prompt injection attacks
         content:
-          message.content &&
-          ForbiddenTokens.reduce(
-            (prev, token) => prev.replaceAll(token, ''),
-            message.content,
-          ),
+          typeof message.content === 'string' // anthropic doesn't support images yet
+            ? ForbiddenTokens.reduce(
+                (prev, token) => prev.replaceAll(token, ''),
+                message.content,
+              )
+            : message.content,
       } as ChatRequestMessage),
   );
 
