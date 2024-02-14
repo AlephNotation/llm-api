@@ -5,11 +5,11 @@ import {
   ChatRequestMessage,
 } from '../types';
 
-export interface CompletionApi {
+export interface CompletionApi<T = string> {
   modelConfig: ModelConfig;
 
   chatCompletion(
-    messages: ChatRequestMessage[],
+    messages: ChatRequestMessage<T>[],
     opt?: ModelRequestOptions,
   ): Promise<ChatResponse>;
 

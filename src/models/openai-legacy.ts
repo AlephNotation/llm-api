@@ -18,7 +18,6 @@ import {
   type OpenAIConfig,
   type ChatRequestMessage,
   type ChatResponse,
-  getTextContent,
 } from '../types';
 import { debug, parseUnsafeJson } from '../utils';
 
@@ -115,7 +114,7 @@ export class OpenAILegacyChatApi implements CompletionApi {
       : 100_000;
 
     const messageTokens = this.getTokensFromPrompt(
-      messages.map((m) => getTextContent(m)),
+      messages.map((m) => m.content ?? ''),
       finalRequestOptions.functions,
     );
     if (messageTokens > maxPromptTokens) {

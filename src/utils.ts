@@ -3,6 +3,12 @@ import jsonic from 'jsonic';
 import { jsonrepair } from 'jsonrepair';
 import { JsonValue } from 'type-fest';
 
+import {
+  ChatContentPartial,
+  ChatContentText,
+  ChatRequestMessage,
+} from './types';
+
 const error = mDebug('llm-api:error');
 const log = mDebug('llm-api:log');
 // eslint-disable-next-line no-console
@@ -28,3 +34,19 @@ export function parseUnsafeJson(json: string): JsonValue {
 }
 
 export type MaybePromise<T> = Promise<T> | T;
+
+export function getTextContent(
+  message: ChatRequestMessage<ChatContentPartial[]>,
+): string {
+  const { content } = message;
+  if (typeof content === 'string') {
+    return content;
+  } else if (Array.isArray(content)) {
+    return content
+      .filter((item): item is ChatContentText => item.type === 'text')
+      .map((textContent) => textContent.text)
+      .join(' ');
+  } else {
+    return ''; // Return an empty string or any other appropriate value for when content is undefined
+  }
+}

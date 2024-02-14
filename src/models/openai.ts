@@ -1,5 +1,5 @@
 import 'openai/shims/web';
-import { defaults } from 'lodash';
+import { defaults, get } from 'lodash';
 import { OpenAI } from 'openai';
 import type { CompletionUsage } from 'openai/resources';
 import type { ChatCompletionCreateParamsBase } from 'openai/resources/chat/completions';
@@ -12,15 +12,16 @@ import {
   MinimumResponseTokens,
 } from '../config';
 import {
-  type ModelRequestOptions,
-  type ModelConfig,
-  type OpenAIConfig,
-  type ChatRequestMessage,
-  type ChatResponse,
-  type ChatRequestToolCall,
-  getTextContent,
+  ModelRequestOptions,
+  ModelConfig,
+  OpenAIConfig,
+  ChatRequestMessage,
+  ChatResponse,
+  ChatRequestToolCall,
+  ChatContentPartial,
+  ChatContentText,
 } from '../types';
-import { debug, parseUnsafeJson } from '../utils';
+import { debug, getTextContent, parseUnsafeJson } from '../utils';
 
 import { TokenError } from './errors';
 import type { CompletionApi } from './interface';
@@ -48,7 +49,7 @@ const convertConfig = (
   stream: config.stream,
 });
 
-export class OpenAIChatApi implements CompletionApi {
+export class OpenAIChatApi implements CompletionApi<ChatContentPartial[]> {
   client: OpenAI;
   _isAzure: boolean;
   _headers?: Record<string, string>;
@@ -80,7 +81,7 @@ export class OpenAIChatApi implements CompletionApi {
 
   // eslint-disable-next-line complexity
   async chatCompletion(
-    initialMessages: ChatRequestMessage[],
+    initialMessages: ChatRequestMessage<ChatContentPartial[]>[],
     requestOptions = {} as Partial<ModelRequestOptions>,
   ): Promise<ChatResponse> {
     const finalRequestOptions = defaults(requestOptions, RequestDefaults);
@@ -88,18 +89,24 @@ export class OpenAIChatApi implements CompletionApi {
       console.warn('OpenAI models currently does not support responsePrefix');
     }
 
-    const messages: ChatRequestMessage[] = finalRequestOptions.systemMessage
-      ? [
-          {
-            role: 'system',
-            content:
-              typeof finalRequestOptions.systemMessage === 'string'
-                ? finalRequestOptions.systemMessage
-                : finalRequestOptions.systemMessage(),
-          },
-          ...initialMessages,
-        ]
-      : initialMessages;
+    const messages: ChatRequestMessage<ChatContentPartial[]>[] =
+      finalRequestOptions.systemMessage
+        ? [
+            {
+              role: 'system',
+              content: [
+                {
+                  type: 'text',
+                  text:
+                    typeof finalRequestOptions.systemMessage === 'string'
+                      ? finalRequestOptions.systemMessage
+                      : finalRequestOptions.systemMessage(),
+                } as ChatContentPartial,
+              ],
+            },
+            ...initialMessages,
+          ]
+        : initialMessages;
 
     debug.log(
       `🔼 completion requested: ${JSON.stringify(
@@ -257,7 +264,10 @@ export class OpenAIChatApi implements CompletionApi {
       return {
         message: receivedMessage,
         content: completion,
-        respond: (message: string | ChatRequestMessage, opt) =>
+        respond: (
+          message: string | ChatRequestMessage<ChatContentPartial[]>,
+          opt,
+        ) =>
           this.chatCompletion(
             [
               ...messages,
@@ -316,7 +326,9 @@ export class OpenAIChatApi implements CompletionApi {
     prompt: string,
     requestOptions = {} as Partial<ModelRequestOptions>,
   ): Promise<ChatResponse> {
-    const messages: ChatRequestMessage[] = [{ role: 'user', content: prompt }];
+    const messages: ChatRequestMessage<ChatContentPartial[]>[] = [
+      { role: 'user', content: [{ type: 'text', text: prompt }] },
+    ];
     return this.chatCompletion(messages, requestOptions);
   }
 }
