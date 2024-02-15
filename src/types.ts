@@ -87,7 +87,7 @@ export type ChatContentImageURL = {
 
 export type ChatContentPartial = ChatContentText | ChatContentImageURL;
 
-export interface ChatRequestMessage<T = string> {
+export interface ChatRequestMessage<T = string | ChatContentPartial[]> {
   role: ChatRequestRole;
   content?: T;
   toolCall?: ChatRequestToolCall; // used to respond to `assistant` type messages
@@ -122,7 +122,7 @@ export type ChatResponse = {
 
   // function to send another message in the same chat, this will automatically reuse all existing settings, and append a new message to the messages array
   respond: <T>(
-    message: string | ChatRequestMessage<T>,
+    message: string | ChatRequestMessage<ChatContentPartial[]>,
     opt?: ModelRequestOptions,
   ) => Promise<ChatResponse>;
 };
