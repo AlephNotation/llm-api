@@ -85,7 +85,7 @@ export type ChatContentImageURL = {
   detail?: ImageDetail;
 };
 
-export type ChatContentType = ChatContentText | ChatContentImageURL;
+export type ChatContentPartial = ChatContentText | ChatContentImageURL;
 
 export interface ChatRequestMessage<T = string> {
   role: ChatRequestRole;
@@ -121,8 +121,8 @@ export type ChatResponse = {
   };
 
   // function to send another message in the same chat, this will automatically reuse all existing settings, and append a new message to the messages array
-  respond: (
-    message: string | ChatRequestMessage,
+  respond: <T = string>(
+    message: string | ChatRequestMessage<T>,
     opt?: ModelRequestOptions,
   ) => Promise<ChatResponse>;
 };

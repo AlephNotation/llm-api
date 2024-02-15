@@ -1,5 +1,5 @@
 import 'openai/shims/web';
-import { defaults, get } from 'lodash';
+import { defaults } from 'lodash';
 import { OpenAI } from 'openai';
 import type { CompletionUsage } from 'openai/resources';
 import type { ChatCompletionCreateParamsBase } from 'openai/resources/chat/completions';
@@ -19,7 +19,6 @@ import {
   ChatResponse,
   ChatRequestToolCall,
   ChatContentPartial,
-  ChatContentText,
 } from '../types';
 import { debug, getTextContent, parseUnsafeJson } from '../utils';
 
@@ -49,7 +48,9 @@ const convertConfig = (
   stream: config.stream,
 });
 
-export class OpenAIChatApi implements CompletionApi<ChatContentPartial[]> {
+export class OpenAIChatApi
+  implements CompletionApi<ChatContentPartial[] | string>
+{
   client: OpenAI;
   _isAzure: boolean;
   _headers?: Record<string, string>;
@@ -256,6 +257,18 @@ export class OpenAIChatApi implements CompletionApi<ChatContentPartial[]> {
       debug.log('🔽 completion received', completion);
     }
 
+    function structureMessage<T = string | ChatContentPartial[]>(message: T) {
+      return typeof message === 'string'
+        ? {
+            role: 'user',
+            content: [{ type: 'text', text: message }],
+          }
+        : {
+            role: 'user',
+            content: message as ChatContentPartial[],
+          };
+    }
+
     if (completion) {
       const receivedMessage: ChatRequestMessage = {
         role: 'assistant',
@@ -264,17 +277,19 @@ export class OpenAIChatApi implements CompletionApi<ChatContentPartial[]> {
       return {
         message: receivedMessage,
         content: completion,
-        respond: (
-          message: string | ChatRequestMessage<ChatContentPartial[]>,
-          opt,
+        respond: <T = string | ChatContentPartial[]>(
+          message: ChatRequestMessage<T> | string,
+          opt: ModelRequestOptions | undefined,
         ) =>
           this.chatCompletion(
             [
               ...messages,
-              receivedMessage,
-              typeof message === 'string'
-                ? { role: 'user', content: message }
-                : message,
+              typeof receivedMessage.content === 'string'
+                ? {
+                    ...receivedMessage,
+                    content: [{ type: 'text', text: receivedMessage.content }],
+                  }
+                : receivedMessage,
             ],
             opt ?? requestOptions,
           ),

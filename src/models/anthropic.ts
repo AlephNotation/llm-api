@@ -183,14 +183,20 @@ export class AnthropicChatApi implements CompletionApi {
     return {
       message: receivedMessage,
       content,
-      respond: (message: string | ChatRequestMessage, opt) =>
+      respond: <T>(
+        message: string | ChatRequestMessage<T>,
+        opt: ModelRequestOptions | undefined,
+      ) =>
         this.chatCompletion(
           [
             ...messages,
             receivedMessage,
             typeof message === 'string'
-              ? { role: 'user', content: message }
-              : message,
+              ? {
+                  role: 'user',
+                  content: message,
+                }
+              : (message as ChatRequestMessage<string>),
           ],
           opt ?? requestOptions,
         ),
