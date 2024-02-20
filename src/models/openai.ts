@@ -83,7 +83,7 @@ export class OpenAIChatApi
   // eslint-disable-next-line complexity
   async chatCompletion(
     initialMessages: ChatRequestMessage<ChatContentPartial[]>[],
-    requestOptions = {} as Partial<ModelRequestOptions>,
+    requestOptions: Partial<ModelRequestOptions> = {},
   ): Promise<ChatResponse> {
     const finalRequestOptions = defaults(requestOptions, RequestDefaults);
     if (finalRequestOptions.responsePrefix) {
@@ -175,16 +175,25 @@ export class OpenAIChatApi
         m.role === 'assistant'
           ? {
               role: 'assistant',
-              content: m.content ?? null,
+              content: Array.isArray(m.content)
+                ? m.content.join('')
+                : m.content ?? '',
               tool_calls: m.toolCall ? [m.toolCall] : undefined,
             }
           : m.role === 'tool'
           ? {
               role: 'tool',
-              content: m.content ?? null,
+              content: Array.isArray(m.content)
+                ? m.content.join('')
+                : m.content ?? '',
               tool_call_id: m.toolCallId ?? '',
             }
-          : { role: m.role, content: m.content ?? null },
+          : {
+              role: m.role,
+              content: Array.isArray(m.content)
+                ? m.content.join('')
+                : m.content ?? '',
+            },
       ),
     };
     const completionOptions = {
@@ -270,9 +279,9 @@ export class OpenAIChatApi
     }
 
     if (completion) {
-      const receivedMessage: ChatRequestMessage = {
+      const receivedMessage: ChatRequestMessage<ChatContentPartial[]> = {
         role: 'assistant',
-        content: completion,
+        content: normalizeContent(completion),
       };
       return {
         message: receivedMessage,
@@ -282,15 +291,7 @@ export class OpenAIChatApi
           opt: ModelRequestOptions | undefined,
         ) =>
           this.chatCompletion(
-            [
-              ...messages,
-              typeof receivedMessage.content === 'string'
-                ? {
-                    ...receivedMessage,
-                    content: [{ type: 'text', text: receivedMessage.content }],
-                  }
-                : receivedMessage,
-            ],
+            [...messages, receivedMessage],
             opt ?? requestOptions,
           ),
         usage: usage
@@ -302,9 +303,9 @@ export class OpenAIChatApi
           : undefined,
       };
     } else if (toolCall) {
-      const receivedMessage: ChatRequestMessage = {
+      const receivedMessage: ChatRequestMessage<ChatContentPartial[]> = {
         role: 'assistant',
-        content: '', // explicitly put empty string, or api will complain it's required property
+        content: normalizeContent(''), // explicitly put empty string, or api will complain it's required property
         toolCall,
       };
       return {
@@ -312,14 +313,21 @@ export class OpenAIChatApi
         toolCallId: toolCall.id,
         name: toolCall.function.name,
         arguments: parseUnsafeJson(toolCall.function.arguments),
-        respond: (message: string | ChatRequestMessage, opt) =>
+        respond: (
+          message: string | ChatRequestMessage<ChatContentPartial[]>,
+          opt?: Partial<ModelRequestOptions>,
+        ) =>
           this.chatCompletion(
             [
               ...messages,
               receivedMessage,
               // NOTE: all tool call messages must be followed up by a `tool` type message
               typeof message === 'string'
-                ? { role: 'tool', toolCallId: toolCall?.id, content: message }
+                ? {
+                    role: 'tool',
+                    toolCallId: toolCall?.id,
+                    content: [{ type: 'text', text: message }],
+                  }
                 : message,
             ],
             opt ?? requestOptions,
@@ -345,5 +353,15 @@ export class OpenAIChatApi
       { role: 'user', content: [{ type: 'text', text: prompt }] },
     ];
     return this.chatCompletion(messages, requestOptions);
+  }
+}
+
+function normalizeContent(
+  content: string | ChatContentPartial[],
+): ChatContentPartial[] {
+  if (typeof content === 'string') {
+    return [{ type: 'text', text: content }];
+  } else {
+    return content;
   }
 }
